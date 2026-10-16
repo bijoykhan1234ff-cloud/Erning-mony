@@ -2,34 +2,120 @@
 <html lang="bn">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>আমার আর্নিং</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Erning Mony</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:#f1f5fb;color:#183052}
-header{background:#075ee8;color:white;padding:22px;font-size:25px;font-weight:bold}
-main{padding:16px;max-width:600px;margin:auto}
-.balance{background:linear-gradient(120deg,#1742a0,#1479ff);color:white;padding:24px;border-radius:16px;margin-bottom:22px}
-.amount{font-size:36px;font-weight:bold;margin:14px 0}
-h2{margin-top:24px}
-.task{background:white;border-radius:12px;padding:18px;margin:12px 0;box-shadow:0 2px 8px #dce5f4}
-button{background:#0861e9;color:white;border:0;border-radius:8px;padding:12px 18px;font-size:16px}
-nav{position:sticky;bottom:0;background:white;padding:14px;display:flex;justify-content:space-around;border-top:1px solid #ddd}
+*{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif}
+body{background:#f0f2f5;padding-bottom:80px}
+.header{background:linear-gradient(135deg,#1e3a8a,#2563eb);color:white;padding:20px;border-radius:0 0 20px 20px}
+.balance-card{background:white;margin:15px;padding:20px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+.btn{width:100%;padding:14px;background:#2563eb;color:white;border:none;border-radius:8px;font-size:16px;margin-top:10px;cursor:pointer}
+.input{width:100%;padding:12px;margin-top:10px;border:1px solid #ddd;border-radius:8px}
+.card{background:white;margin:15px;padding:15px;border-radius:12px}
+.hidden{display:none}
+.navbar{position:fixed;bottom:0;width:100%;background:white;display:flex;justify-content:space-around;padding:10px 0;box-shadow:0 -2px 5px rgba(0,0,0,0.1)}
+.nav-btn{background:none;border:none;color:#666;font-size:14px}
+.nav-btn.active{color:#2563eb;font-weight:bold}
 </style>
 </head>
 <body>
-<header>আমার আর্নিং</header>
-<main>
-<section class="balance">
-অ্যাকাউন্ট ব্যালেন্স
-<div class="amount">৳ 0.00</div>
-<button onclick="alert('উত্তোলনের ব্যবস্থা পরবর্তী ধাপে যোগ হবে।')">উত্তোলন</button>
-</section>
-<h2>ছোট কাজ</h2>
-<div class="task"><h3>📅 দৈনিক চেক-ইন</h3><p>প্রতিদিন লগইন করার কাজ।</p></div>
-<div class="task"><h3>▶️ ভিডিও দেখুন</h3><p>ভিডিও দেখার কাজ এখানে থাকবে।</p></div>
-<div class="task"><h3>📝 সার্ভে পূরণ</h3><p>সার্ভে করার কাজ এখানে থাকবে।</p></div>
-</main>
-<nav><span>🏠 হোম</span><span>📋 টাস্ক</span><span>🔗 লিংক</span><span>💰 আয়</span><span>👤 অ্যাকাউন্ট</span></nav>
+
+<div id="loginPage">
+  <div class="header"><h2>Login / Register</h2></div>
+  <div class="card">
+    <input type="email" id="email" placeholder="Email" class="input">
+    <input type="password" id="password" placeholder="Password" class="input">
+    <button class="btn" onclick="register()">Register</button>
+    <button class="btn" style="background:#28a745" onclick="login()">Login</button>
+  </div>
+</div>
+
+<div id="homePage" class="hidden">
+  <div class="header">
+    <p>অ্যাকাউন্ট ব্যালেন্স</p>
+    <h2 id="balance">৳ 0.00</h2>
+  </div>
+  <div class="card">
+    <b>📅 দৈনিক চেক-ইন</b>
+    <p>প্রতিদিন +৳2 বোনাস</p>
+    <button class="btn" onclick="addBalance(2)">ক্লেইম করুন</button>
+  </div>
+  <div class="card">
+    <b>📺 ভিডিও দেখুন</b>
+    <p>প্রতি ভিডিও +৳5</p>
+    <button class="btn" onclick="addBalance(5)">ভিডিও দেখুন</button>
+  </div>
+  <div class="card">
+    <b>👥 রেফার করুন</b>
+    <p>কোড: <span id="refCode"></span></p>
+    <button class="btn" onclick="copyRef()">লিংক কপি</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBqtD2DddBQcRt1mHOJnwWojnelg1i7U9I",
+  authDomain: "erning-money-1eca1.firebaseapp.com",
+  projectId: "erning-money-1eca1",
+  storageBucket: "erning-money-1eca1.firebasestorage.app",
+  messagingSenderId: "1096617886963",
+  appId: "1:1096617886963:web:fc850eec4cd8e3cdb96386",
+  measurementId: "G-S6HWLFTB00"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+let currentUser = null;
+
+onAuthStateChanged(auth, async (user) => {
+  if(user){
+    currentUser = user;
+    document.getElementById('loginPage').classList.add('hidden');
+    document.getElementById('homePage').classList.remove('hidden');
+    loadBalance();
+  }
+});
+
+async function register(){
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const userCred = await createUserWithEmailAndPassword(auth, email, password);
+  await setDoc(doc(db, "users", userCred.user.uid), {balance: 0, ref: userCred.user.uid.slice(0,6).toUpperCase()});
+  alert("Register Success!");
+}
+
+async function login(){
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  await signInWithEmailAndPassword(auth, email, password);
+}
+
+async function loadBalance(){
+  const snap = await getDoc(doc(db, "users", currentUser.uid));
+  if(snap.exists()){
+    document.getElementById('balance').innerText = "৳ " + snap.data().balance.toFixed(2);
+    document.getElementById('refCode').innerText = snap.data().ref;
+  }
+}
+
+async function addBalance(amount){
+  const ref = doc(db, "users", currentUser.uid);
+  const snap = await getDoc(ref);
+  let bal = snap.data().balance + amount;
+  await updateDoc(ref, {balance: bal});
+  loadBalance();
+  alert("৳"+amount+" যোগ হয়েছে!");
+}
+
+function copyRef(){
+  navigator.clipboard.writeText("https://bijoykhan1234ff-cloud.github.io/Erning-mony/?ref="+document.getElementById('refCode').innerText);
+  alert("রেফার লিংক কপি হয়েছে");
+}
+</script>
 </body>
-                            </html>
+</html>
